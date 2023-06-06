@@ -18,6 +18,10 @@ public class UdfFactory {
 
     private static Set<UdfConfig> globalUdf = new HashSet<>();
 
+    static {
+        init();
+    }
+
     /**
      * key是tableName
      * value是对应table的udf
@@ -32,8 +36,10 @@ public class UdfFactory {
         return res;
     }
 
-
-    static {
+    /**
+     * init udf
+     */
+    public static void init(){
         Class<?> mainApplicationClass = deduceMainApplicationClass();
         if(mainApplicationClass!=null&&mainApplicationClass.isAnnotationPresent(EnableCustomUdf.class)){
             EnableCustomUdf enableCustomUdf = mainApplicationClass.getAnnotation(EnableCustomUdf.class);

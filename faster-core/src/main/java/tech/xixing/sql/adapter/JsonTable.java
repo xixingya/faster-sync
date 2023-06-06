@@ -15,6 +15,8 @@ import org.apache.calcite.schema.Statistics;
 import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.calcite.sql.SqlTypeNameSpec;
 import org.apache.calcite.util.Pair;
+import tech.xixing.sql.convert.DefaultRowConverter;
+import tech.xixing.sql.convert.RowConverter;
 import tech.xixing.sql.parser.type.SqlTypeNameSpec2Type;
 
 import java.util.ArrayList;
@@ -30,6 +32,8 @@ public class JsonTable extends AbstractTable implements ScannableTable {
     private final JSONArray jsonarr;
 
     private final LinkedHashMap<String,Object> fields;
+
+    private RowConverter rowConverter = new DefaultRowConverter();
 
     // private final Enumerable<Object> enumerable;
 
@@ -100,8 +104,12 @@ public class JsonTable extends AbstractTable implements ScannableTable {
         return new AbstractEnumerable<Object[]>() {
             @Override
             public Enumerator<Object[]> enumerator() {
-                return new JsonEnumerator(jsonarr,fields);
+                return new JsonEnumerator(jsonarr,fields,rowConverter);
             }
         };
+    }
+
+    public void setRowConverter(RowConverter rowConverter){
+        this.rowConverter = rowConverter;
     }
 }

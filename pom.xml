@@ -7,7 +7,7 @@
     <groupId>tech.xixing.sync</groupId>
     <artifactId>faster-sync</artifactId>
     <packaging>pom</packaging>
-    <version>0.1</version>
+    <version>0.2-SNAPSHOT</version>
     <modules>
         <module>faster-core</module>
     </modules>

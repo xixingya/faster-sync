@@ -26,7 +26,7 @@ import java.util.Map;
  * public fields and methods in a json.
  */
 public class JsonSchema extends AbstractSchema {
-    private String target;
+    private volatile String target;
     private String databaseName;
     private JSONArray targetArray;
 

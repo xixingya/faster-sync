@@ -10,6 +10,7 @@ import org.apache.calcite.schema.impl.TableFunctionImpl;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.util.Pair;
 import tech.xixing.sql.adapter.JsonSchema;
+import tech.xixing.sql.convert.RowConverter;
 import tech.xixing.sql.udf.DefaultUdtf;
 import tech.xixing.sql.udf.UdfFactory;
 import tech.xixing.sql.util.SQLUtils;
@@ -92,18 +93,12 @@ public class SQLConfig {
         statement = connection.prepareStatement(sql);
     }
 
-    public void execute(String jsonArray) throws SQLException {
-        long l = System.currentTimeMillis();
-        jsonSchema.setTarget(jsonArray);
-        ResultSet resultSet = statement.executeQuery();
-        System.out.println("use time = "+(System.currentTimeMillis()-l));
-        while (resultSet.next()) {
-            JSONObject jo = new JSONObject();
-            int n = resultSet.getMetaData().getColumnCount();
-            for (int i = 1; i <= n; i++) {
-                jo.put(resultSet.getMetaData().getColumnName(i), resultSet.getObject(i));
-            }
-            System.out.println(jo.toJSONString());
-        }
+    public void setRowConverter(RowConverter rowConverter){
+
+    }
+
+
+    private void shutdownGracefully(){
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> System.currentTimeMillis()));
     }
 }
