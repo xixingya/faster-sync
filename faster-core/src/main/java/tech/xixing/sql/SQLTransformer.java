@@ -1,74 +1,97 @@
 package tech.xixing.sql;
 
-import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.sql.ExtendedSqlRowTypeNameSpec;
 import tech.xixing.sql.config.SQLConfig;
+import tech.xixing.sql.constants.SqlConstants;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.Objects;
 
 /**
+ * SQL Transformer for processing JSON data with SQL queries.
+ * This class handles the transformation of JSON data through SQL operations.
+ * 
+ * Note: This class is not thread-safe due to the stateful nature of SQLConfig.
+ * Use separate instances for concurrent operations.
+ * 
  * @author liuzhifei
  * @since 2.0
- * SQL Transform when input a json and output a json
  */
 @Slf4j
-@Data
 public class SQLTransformer {
 
-    private SQLConfig sqlConfig;
-
-    public SQLTransformer(SQLConfig sqlConfig) {
-        this.sqlConfig = sqlConfig;
-    }
-
+    private final SQLConfig sqlConfig;
 
     /**
-     * synchronized statement because is thread unsafe
-     *
-     * @param jsonArray
-     * @return
-     * @throws SQLException
+     * Constructor for SQLTransformer
+     * 
+     * @param sqlConfig the SQL configuration to use
+     * @throws IllegalArgumentException if sqlConfig is null
      */
-    public List<JSONObject> transform(String jsonArray) throws SQLException {
-        ReentrantLock lock = new ReentrantLock();
-        lock.lock();
+    public SQLTransformer(SQLConfig sqlConfig) {
+        this.sqlConfig = Objects.requireNonNull(sqlConfig, SqlConstants.ERROR_NULL_SQL_CONFIG);
+    }
+
+    /**
+     * Transform JSON array data using the configured SQL query.
+     * This method is synchronized to ensure thread safety when using the same instance.
+     *
+     * @param jsonArray JSON array as string to transform
+     * @return List of JSONObject results
+     * @throws SQLException if SQL execution fails
+     * @throws IllegalArgumentException if jsonArray is null or empty
+     */
+    public synchronized List<JSONObject> transform(String jsonArray) throws SQLException {
+        if (jsonArray == null || jsonArray.trim().isEmpty()) {
+            throw new IllegalArgumentException(SqlConstants.ERROR_EMPTY_JSON_ARRAY);
+        }
+        
         try {
             return doTransform(jsonArray);
-        }
-        catch (Exception e){
-            log.error("transform error",e);
+        } catch (Exception e) {
+            String truncatedJson = jsonArray.length() > SqlConstants.MAX_JSON_LOG_LENGTH 
+                ? jsonArray.substring(0, SqlConstants.MAX_JSON_LOG_LENGTH) + SqlConstants.JSON_TRUNCATED_SUFFIX 
+                : jsonArray;
+            log.error("Transform error for data: {}", truncatedJson, e);
             throw e;
         }
-        finally {
-            lock.unlock();
-        }
     }
 
+    /**
+     * Internal method to perform the actual transformation with proper resource management
+     */
     private List<JSONObject> doTransform(String jsonArray) throws SQLException {
         sqlConfig.setData(jsonArray);
-        List<JSONObject> res = new ArrayList<>();
+        List<JSONObject> results = new ArrayList<>();
+        
         PreparedStatement statement = sqlConfig.getStatement();
-        ResultSet resultSet = statement.executeQuery();
-        LinkedHashMap<String, Object> fields = sqlConfig.getFields();
-        while (resultSet.next()) {
-            JSONObject jo = new JSONObject();
-            int n = resultSet.getMetaData().getColumnCount();
-            for (int i = 1; i <= n; i++) {
-                Object object = resultSet.getObject(i);
-                jo.put(resultSet.getMetaData().getColumnLabel(i), object);
+        try (ResultSet resultSet = statement.executeQuery()) {
+            while (resultSet.next()) {
+                JSONObject jsonObject = new JSONObject();
+                int columnCount = resultSet.getMetaData().getColumnCount();
+                
+                for (int i = 1; i <= columnCount; i++) {
+                    String columnLabel = resultSet.getMetaData().getColumnLabel(i);
+                    Object value = resultSet.getObject(i);
+                    jsonObject.put(columnLabel, value);
+                }
+                results.add(jsonObject);
             }
-            res.add(jo);
         }
-        return res;
+        return results;
     }
 
+    /**
+     * Get the current SQL configuration
+     * 
+     * @return the SQL configuration
+     */
+    public SQLConfig getSqlConfig() {
+        return sqlConfig;
+    }
 }
