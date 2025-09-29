@@ -2,6 +2,7 @@ package tech.xixing.sql.util;
 
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
@@ -15,22 +16,38 @@ import tech.xixing.sql.parser.extend.CreateSqlParserImpl;
 
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 /**
+ * SQL utility class for parsing and transformation operations
+ * 
  * @author liuzhifei
  * @since 0.1
  */
+@Slf4j
 public class SQLUtils {
 
     public static LinkedHashMap<String,Object> getFieldsByJSONObject(String json){
         LinkedHashMap<String,Object> fields = new LinkedHashMap<>();
-        JSONObject jsonObject = JSONObject.parseObject(json);
-        Set<String> keySet = jsonObject.keySet();
-        for (String key : keySet) {
-            Object value = jsonObject.get(key);
-            fields.put(key,value.getClass());
+        
+        try {
+            Optional<JSONObject> jsonObjectOpt = JsonUtils.parseJsonObject(json);
+            if (jsonObjectOpt.isEmpty()) {
+                log.warn("Failed to parse JSON object for field extraction: {}", JsonUtils.getSafeLogString(json));
+                return fields;
+            }
+            
+            JSONObject jsonObject = jsonObjectOpt.get();
+            Set<String> keySet = jsonObject.keySet();
+            for (String key : keySet) {
+                Object value = jsonObject.get(key);
+                fields.put(key, value != null ? value.getClass() : String.class);
+            }
+        } catch (Exception e) {
+            log.error("Error extracting fields from JSON: {}", e.getMessage());
         }
+        
         return fields;
     }
 
