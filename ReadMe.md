@@ -1,3 +1,5 @@
+
+
 # Faster Sync
 全新一代的sql处理框架，如果你有数据处理的需求，
 并且并没有想好使用什么做数据处理，那么，它将是你一种很好的选择。
@@ -11,7 +13,7 @@ Faster Sync 采用apache calcite做sql的处理框架，并且自定义拓展了
 <dependency>
   <groupId>tech.xixing.sync</groupId>
   <artifactId>faster-core</artifactId>
-  <version>0.1</version>
+  <version>0.2-SNAPSHOT</version>
 </dependency>
 ```
 
